@@ -3,29 +3,23 @@
 """
 ################################################################################
 The purpose of this script is to 
-
   1. Query transaction information, at a UPC level, of items sold 
      through the online shop.
-
   2. Organize the result set, by style group, into a time series of daily unit 
      sales. Specifically, two time series are of interest - the complete time 
      series and the 'first 91 days' time series. 
-
   3. Polynomials are fit - degrees 0 through 4 - to the 'first 91 days' time 
      series. The coefficients and sum of residuals squared are persisted as 
      values in a dict object (with the corresponding key being the style group
      identifier). Other data, such as count of zero-unit-sales days, are also
      persisted as values for each style group key in the dict object.
-
   4. These 'fit statistics' are INSERTed into a MySQL database table - 
      `fce`.`sg_polyfit` - for later retrieval and use by unsupervised
      learning algorithms.  
-
 TO DO:
-
   - Normalize time series with respect to magnitude
   - 'Functionalize' creation of SQL INSERT statement.
-
+  - JSON for database credentials
 """
 
 #import seaborn
@@ -84,9 +78,12 @@ df = pd.DataFrame.from_records(crsr.fetchall(), columns = col_names)
 
 conn.close()
 
-df_dict = {sg: pd.DataFrame for sg in df.STYLE_GROUP_IDNT.unique()}
+"""
+df_dict = {sg: True for sg in df.STYLE_GROUP_IDNT.unique()}
 for sg in df_dict.keys():
     df_dict[sg] = df[:][df.STYLE_GROUP_IDNT == sg]
+"""    
+df_dict = {sg: df[df.STYLE_GROUP_IDNT == sg].copy() for sg in df.STYLE_GROUP_IDNT.unique()}
 
 fstm = '/path/to/plot_repository/'
 fig = plt.figure()
@@ -95,11 +92,9 @@ conn = mysql.connector.Connect(**db_creds.login_info)
 conn.set_converter_class(NumpyMySQLConverter)
 crsr = conn.cursor()
 
-for sg in df_dict.keys():
+for sg, df in df_dict.iteritems():
  
     print("Started", sg)
-    
-    df = df_dict[sg]
     
     if len(df.values) < 7:
         print("Skipped due to low observation count.")
