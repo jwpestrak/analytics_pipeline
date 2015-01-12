@@ -78,11 +78,6 @@ df = pd.DataFrame.from_records(crsr.fetchall(), columns = col_names)
 
 conn.close()
 
-"""
-df_dict = {sg: True for sg in df.STYLE_GROUP_IDNT.unique()}
-for sg in df_dict.keys():
-    df_dict[sg] = df[:][df.STYLE_GROUP_IDNT == sg]
-"""    
 df_dict = {sg: df[df.STYLE_GROUP_IDNT == sg].copy() for sg in df.STYLE_GROUP_IDNT.unique()}
 
 fstm = '/path/to/plot_repository/'
